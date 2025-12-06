@@ -1,0 +1,2 @@
+# ImpactPich_AI
+Desafio Vibe Coding: O 'ImpactPitch AI' é um assistente para empreendedores sociais. Ele ajuda a traduzir a missão de impacto em pitch decks profissionais e argumentos de vendas personalizados.
