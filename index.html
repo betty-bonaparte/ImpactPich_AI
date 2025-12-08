@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImpactPitch AI - Estruturador de Negócios de Impacto</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        
+        /* Animações Suaves */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        
+        /* Estilos de Impressão (PDF Limpo) */
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white; }
+            .print-break-inside-avoid { break-inside: avoid; }
+            .print-shadow-none { box-shadow: none !important; border: 1px solid #e2e8f0; }
+        }
+
+        /* Scrollbar Personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* --- HIGH-TECH FUTURISM TYPOGRAPHY --- */
+        
+        /* Metallic / Holographic Glow for "ImpactPitch" */
+        .text-holographic {
+            background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 45%, #67E8F9 55%, #CFFAFE 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(103, 232, 249, 0.5));
+            letter-spacing: -0.02em;
+        }
+
+        /* Neon Yellow for "AI" */
+        .text-neon-yellow {
+            color: #FAFE55; /* Neon Yellow base */
+            text-shadow: 
+                0 0 5px #FACC15,
+                0 0 10px #FACC15,
+                0 0 20px #FACC15,
+                0 0 40px rgba(250, 204, 21, 0.5);
+        }
+
+        /* Floating Animation */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* WYSIWYG Editor Styles */
+        [contenteditable="true"] {
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+        [contenteditable="true"]:hover {
+            background-color: rgba(241, 245, 249, 0.5);
+            outline: 1px dashed #cbd5e1;
+            cursor: text;
+        }
+        [contenteditable="true"]:focus {
+            background-color: #ffffff;
+            outline: 2px solid #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.5.1",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0"
+  }
+}
+</script>
+</head>
+<body class="text-slate-900 h-full">
+
+    <div id="app-content" class="min-h-screen flex flex-col">
+        <!-- O conteúdo será injetado aqui via JavaScript -->
+        <div class="flex items-center justify-center h-screen bg-slate-50">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURAÇÃO & CREDENCIAIS ---
+        
+        const SUPABASE_URL = 'https://vxzvyhhjgxkphpjxtfst.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_miaunNwEITKGoi8tAcDPeA_pvCxWId0'; // Nota: Chave pública anon é segura para front-end
+        const GEMINI_API_KEY = 'AIzaSyC0eLXkLttXoS-bqczD0zVhSgLR7py4iWI'; // Nota: Em produção, usar proxy backend é recomendado
+
+        // Inicialização do Supabase
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- 2. MOCK DATA (Templates Estáticos) ---
+        const MOCK_DATA = {
+            sectors: ["Bioeconomia", "Educação", "Economia Circular", "Energia Renovável", "Saúde Acessível"],
+            objections: {
+                "Bioeconomia": [
+                    { q: "Como garantir a logística na floresta?", a: "Utilizamos hubs fluviais descentralizados e parcerias com cooperativas locais para otimizar o transporte." },
+                ],
+                "Geral": [
+                    { q: "Qual o retorno financeiro esperado?", a: "Projetamos breakeven em 18 meses com margem líquida de 15% no terceiro ano." },
+                ]
+            },
+            templates: {
+                "Bioeconomia": { p: "A cadeia do açaí perde 40% do valor por falta de processamento local.", s: "Micro-usinas solares de processamento nas comunidades ribeirinhas." },
+                "Educação": { p: "Jovens de periferia não têm acesso a mentoria executiva.", s: "Plataforma AI que conecta executivos seniores a jovens talentos para mentoria gamificada." },
+                "Economia Circular": { p: "Resíduos têxteis são descartados incorretamente.", s: "Marketplace B2B para sobras de tecidos industriais conectando confecções a artesãos." }
+            }
+        };
+
+        const DEFAULT_PITCH = {
+            id: null,
+            name: "",
+            sector: "",
+            problem: "",
+            solution: "",
+            metrics: "",
+            ask: 0,
+            return: 0,
+            model: "",
+            investorProfile: "Anjo"
+        };
+
+        // --- 3. SERVIÇOS (AUTH, DB, AI) ---
+
+        const Services = {
+            // Autenticação
+            auth: {
+                signUp: async (email, password) => {
+                    return await _supabase.auth.signUp({ email, password });
+                },
+                signIn: async (email, password) => {
+                    return await _supabase.auth.signInWithPassword({ email, password });
+                },
+                signOut: async () => {
+                    return await _supabase.auth.signOut();
+                },
+                getSession: async () => {
+                    const { data } = await _supabase.auth.getSession();
+                    return data.session;
+                },
+                getUser: async () => {
+                    const { data } = await _supabase.auth.getUser();
+                    return data.user;
+                }
+            },
+
+            // Banco de Dados (Pitches)
+            db: {
+                listPitches: async () => {
+                    const { data: { user } } = await _supabase.auth.getUser();
+                    if (!user) return [];
+                    
+                    const { data, error } = await _supabase
+                        .from('pitches')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: false });
+                    
+                    if (error) {
+                        console.error('Erro ao listar:', error);
+                        // Fallback temporário se a tabela não existir para não quebrar o demo
+                        return JSON.parse(localStorage.getItem('impact_pitches_backup') || '[]'); 
+                    }
+                    
+                    // Mapear estrutura do DB para estrutura da App
+                    return data.map(row => ({
+                        ...row.data, // JSONB content
+                        id: row.id,  // UUID real
+                        lastEdited: row.created_at // ou updated_at
+                    }));
+                },
+
+                savePitch: async (pitchData) => {
+                    const { data: { user } } = await _supabase.auth.getUser();
+                    if (!user) throw new Error("Usuário não logado");
+
+                    // Prepara o objeto para salvar na coluna JSONB 'data'
+                    const payload = { ...pitchData };
+                    delete payload.id; // ID fica na coluna ID da tabela
+                    delete payload.lastEdited;
+
+                    if (pitchData.id) {
+                        // UPDATE
+                        const { data, error } = await _supabase
+                            .from('pitches')
+                            .update({ 
+                                data: payload,
+                                name: payload.name, // Coluna auxiliar para busca se existir
+                                sector: payload.sector // Coluna auxiliar
+                            })
+                            .eq('id', pitchData.id)
+                            .select();
+                        
+                        if (error) throw error;
+                        return { ...pitchData, lastEdited: new Date() };
+                    } else {
+                        // INSERT
+                        const { data, error } = await _supabase
+                            .from('pitches')
+                            .insert([{ 
+                                user_id: user.id,
+                                name: payload.name || 'Novo Projeto',
+                                sector: payload.sector,
+                                data: payload
+                            }])
+                            .select();
+
+                        if (error) throw error;
+                        return { ...payload, id: data[0].id, lastEdited: new Date() };
+                    }
+                },
+
+                deletePitch: async (id) => {
+                    const { error } = await _supabase
+                        .from('pitches')
+                        .delete()
+                        .eq('id', id);
+                    if (error) throw error;
+                }
+            },
+
+            // Inteligência Artificial (Gemini REST)
+            ai: {
+                generateSuggestions: async (context) => {
+                    const prompt = `Com base neste pitch: "${context}". Gere 3 argumentos curtos e diretos (máximo 15 palavras cada) para convencer um Investidor Anjo que prioriza retorno financeiro e impacto social. Formate a resposta APENAS como uma lista HTML (<ul><li>...</li></ul>) sem formatação markdown.`;
+
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }]
+                            })
+                        });
+
+                        const data = await response.json();
+                        return data.candidates[0].content.parts[0].text;
+                    } catch (error) {
+                        console.error("Erro Gemini:", error);
+                        return "<ul><li>Erro ao conectar com a IA. Tente novamente.</li></ul>";
+                    }
+                }
+            }
+        };
+
+        // --- 4. GERENCIAMENTO DE ESTADO GLOBAL ---
+
+        let state = {
+            user: null,
+            currentView: 'login', // login, my-pitches, wizard, deck, objections, dashboard
+            authMode: 'login',
+            currentPitch: { ...DEFAULT_PITCH },
+            authError: '',
+            isLoading: false,
+            pitchesList: [],
+            aiResponse: null
+        };
+
+        // --- 5. NAVEGAÇÃO & AÇÕES ---
+
+        window.navigateTo = async (view, pitchId = null) => {
+            state.isLoading = true;
+            render(); // Mostra spinner
+
+            state.currentView = view;
+            
+            if (view === 'my-pitches') {
+                state.pitchesList = await Services.db.listPitches();
+            } else if (view === 'wizard' && pitchId) {
+                // Modo Edição: Achar na lista ou buscar single (aqui usando a lista carregada)
+                if (state.pitchesList.length === 0) state.pitchesList = await Services.db.listPitches();
+                const pitch = state.pitchesList.find(p => p.id === pitchId);
+                if (pitch) state.currentPitch = { ...pitch };
+            } else if (view === 'wizard' && !pitchId) {
+                // Modo Novo
+                state.currentPitch = { ...DEFAULT_PITCH };
+            }
+
+            state.isLoading = false;
+            render();
+        };
+
+        window.toggleAuthMode = () => {
+            state.authMode = state.authMode === 'login' ? 'signup' : 'login';
+            state.authError = '';
+            render();
+        };
+
+        window.submitAuth = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            
+            state.isLoading = true;
+            render();
+
+            try {
+                if (state.authMode === 'signup') {
+                    const { data, error } = await Services.auth.signUp(email, password);
+                    if (error) throw error;
+                    alert("Cadastro realizado! Faça login.");
+                    state.authMode = 'login';
+                } else {
+                    const { data, error } = await Services.auth.signIn(email, password);
+                    if (error) throw error;
+                    state.user = data.user;
+                    await window.navigateTo('my-pitches');
+                }
+            } catch (err) {
+                state.authError = err.message || "Erro na autenticação.";
+            } finally {
+                state.isLoading = false;
+                render();
+            }
+        };
+
+        window.logout = async () => {
+            await Services.auth.signOut();
+            state.user = null;
+            state.currentView = 'login';
+            state.currentPitch = { ...DEFAULT_PITCH };
+            render();
+        };
+
+        // Atualização de formulário Wizard
+        window.updatePitchData = (field, value) => {
+            state.currentPitch[field] = value;
+            // Debounce save poderia ser implementado aqui, mas vamos manter simples
+        };
+
+        // WYSIWYG: Salvar ao perder foco (Blur)
+        window.handleInPlaceEdit = async (element, field) => {
+            const newValue = element.innerText;
+            if (state.currentPitch[field] !== newValue) {
+                state.currentPitch[field] = field === 'ask' || field === 'return' ? Number(newValue.replace(/[^0-9]/g, '')) : newValue;
+                
+                // Feedback visual de salvamento
+                element.style.borderBottom = "2px solid #10b981"; // Verde
+                
+                try {
+                    const savedPitch = await Services.db.savePitch(state.currentPitch);
+                    state.currentPitch = savedPitch; // Atualiza ID se for novo
+                    setTimeout(() => { element.style.borderBottom = "none"; }, 1000);
+                } catch (e) {
+                    console.error("Erro auto-save:", e);
+                    element.style.borderBottom = "2px solid red";
+                }
+            }
+        };
+
+        window.loadTemplate = () => {
+            const template = MOCK_DATA.templates[state.currentPitch.sector];
+            if (template) {
+                state.currentPitch.problem = template.p;
+                state.currentPitch.solution = template.s;
+                render(); // Re-render Wizard
+            }
+        };
+
+        window.saveProject = async () => {
+            if (!state.currentPitch.name) {
+                alert("Por favor, dê um nome ao projeto.");
+                return;
+            }
+            state.isLoading = true;
+            render();
+            try {
+                const savedPitch = await Services.db.savePitch(state.currentPitch);
+                state.currentPitch = savedPitch;
+                alert("Projeto salvo na nuvem!");
+                window.navigateTo('deck');
+            } catch (e) {
+                alert("Erro ao salvar: " + e.message);
+                state.isLoading = false;
+                render();
+            }
+        };
+
+        window.deleteProject = async (e, id) => {
+            e.stopPropagation();
+            if(confirm("Tem certeza que deseja excluir este projeto da nuvem?")) {
+                try {
+                    await Services.db.deletePitch(id);
+                    state.pitchesList = state.pitchesList.filter(p => p.id !== id);
+                    render();
+                } catch(err) {
+                    alert("Erro ao excluir.");
+                }
+            }
+        };
+
+        window.generateAiSuggestions = async () => {
+            const btn = document.getElementById('ai-btn');
+            const output = document.getElementById('ai-output');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pensando...';
+            
+            const context = `Projeto: ${state.currentPitch.name}. Problema: ${state.currentPitch.problem}. Solução: ${state.currentPitch.solution}.`;
+            const suggestion = await Services.ai.generateSuggestions(context);
+            
+            state.aiResponse = suggestion;
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Novos Argumentos';
+            render(); // Re-render para mostrar
+        };
+
+        // NOVA FUNÇÃO: Gera argumentos para o Deck e mostra modal
+        window.handleAiDeckHelp = async () => {
+            const btn = document.getElementById('btn-deck-ai');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando...';
+
+            const context = `Projeto: ${state.currentPitch.name}. Problema: ${state.currentPitch.problem}. Solução: ${state.currentPitch.solution}. Impacto: ${state.currentPitch.metrics}`;
+            
+            const suggestions = await Services.ai.generateSuggestions(context);
+
+            // Cria o Modal
+            const modalId = 'ai-modal-' + Date.now();
+            const modalHtml = `
+                <div id="${modalId}" class="fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onclick="document.getElementById('${modalId}').remove()">
+                    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 relative transform transition-all scale-100" onclick="event.stopPropagation()">
+                        <button onclick="document.getElementById('${modalId}').remove()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-times text-xl"></i>
+                        </button>
+                        <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+                            <div class="bg-purple-100 p-3 rounded-lg text-purple-600">
+                                <i class="fa-solid fa-robot text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-xl text-slate-800">Argumentos Gerados pelo Gemini</h3>
+                                <p class="text-sm text-slate-500">Sugestões para fortalecer seu pitch verbal</p>
+                            </div>
+                        </div>
+                        <div class="prose prose-slate text-slate-600 leading-relaxed text-lg">
+                            ${suggestions}
+                        </div>
+                        <div class="mt-8 text-right">
+                            <button onclick="document.getElementById('${modalId}').remove()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-slate-800 transition-colors">
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        };
+
+        // --- 6. COMPONENTES DE RENDERIZAÇÃO ---
+
+        function renderSpinner() {
+            return `<div class="flex items-center justify-center h-full py-20"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div></div>`;
+        }
+
+        function renderLogin() {
+            const currentYear = new Date().getFullYear();
+            
+            return `
+                <div class="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50">
+                    <div class="max-w-md w-full mx-auto bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-fade-in">
+                        
+                        <!-- BANNER: GLOBAL NEURAL NETWORK -->
+                        <div class="relative w-full h-72 flex items-center justify-center overflow-hidden bg-[#0a192f]">
+                            <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2560&auto=format&fit=crop" 
+                                 alt="Global Neural Network Sphere" 
+                                 class="absolute inset-0 w-full h-full object-cover opacity-90 scale-110"
+                                 style="filter: contrast(1.2) brightness(0.9) saturate(1.2);">
+                            <div class="absolute inset-0 bg-gradient-to-b from-[#0a192f]/40 via-transparent to-[#0a192f]/80"></div>
+                            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.15)_0%,transparent_70%)]"></div>
+
+                            <div class="relative z-10 text-center animate-float px-4">
+                                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 leading-none drop-shadow-xl">
+                                    <span class="text-holographic">ImpactPitch</span> 
+                                    <span class="text-neon-yellow ml-1">AI</span>
+                                </h1>
+                                <div class="flex items-center justify-center mt-3 opacity-90">
+                                    <div class="h-[1px] w-12 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                                    <div class="w-1.5 h-1.5 bg-cyan-300 rounded-full mx-2 shadow-[0_0_10px_#67E8F9]"></div>
+                                    <div class="h-[1px] w-12 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-8">
+                            <h2 class="text-center text-2xl font-bold text-slate-800 mb-3">
+                                Crie negócios com propósito!
+                            </h2>
+                            <p class="text-center text-slate-500 text-sm mb-8 leading-relaxed">
+                                Seu assistente inteligente para criar pitch decks convincentes e conquistar investidores que acreditam em negócios com propósito.
+                            </p>
+
+                            ${state.authError ? `<div class="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center border border-red-100">${state.authError}</div>` : ''}
+
+                            <form onsubmit="window.submitAuth(event)" class="space-y-5">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-envelope"></i></div>
+                                        <input type="email" id="auth-email" required class="pl-10 w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none" placeholder="seu@email.com">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-lock"></i></div>
+                                        <input type="password" id="auth-password" required class="pl-10 w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all outline-none" placeholder="••••••••">
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:shadow-cyan-500/20 transition-all transform active:scale-95 flex justify-center items-center group">
+                                    ${state.isLoading ? '<i class="fa-solid fa-spinner fa-spin"></i>' : (state.authMode === 'login' ? 'Entrar' : 'Cadastrar')}
+                                </button>
+                            </form>
+
+                            <div class="mt-6 text-center pt-4 border-t border-slate-50">
+                                <p class="text-sm text-slate-500">
+                                    ${state.authMode === 'login' ? 'Não tem uma conta?' : 'Já tem uma conta?'}
+                                    <button onclick="window.toggleAuthMode()" class="font-bold text-cyan-600 hover:text-cyan-700 hover:underline ml-1">
+                                        ${state.authMode === 'login' ? 'Cadastre-se' : 'Faça Login'}
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-50 py-3 text-center border-t border-slate-100">
+                            <p class="text-xs text-slate-400">ImpactPitch AI &copy; ${currentYear}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMyPitches() {
+            if (state.isLoading) return renderSpinner();
+
+            const pitches = state.pitchesList;
+            
+            let pitchesHtml = '';
+            if (pitches.length === 0) {
+                pitchesHtml = `
+                    <div class="col-span-full text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+                        <div class="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                            <i class="fa-solid fa-folder-open text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-slate-900">Nenhum projeto ainda</h3>
+                        <p class="text-slate-500 mb-6">Comece a estruturar sua primeira ideia de impacto.</p>
+                        <button onclick="window.navigateTo('wizard')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium shadow-lg transition-all">
+                            <i class="fa-solid fa-plus mr-2"></i> Criar Novo Pitch
+                        </button>
+                    </div>
+                `;
+            } else {
+                pitchesHtml = pitches.map(p => `
+                    <div onclick="window.navigateTo('wizard', '${p.id}')" class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all cursor-pointer group relative">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-leaf"></i>
+                            </div>
+                            <button onclick="window.deleteProject(event, '${p.id}')" class="text-slate-300 hover:text-red-500 p-2 transition-colors z-10">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        <h3 class="font-bold text-lg text-slate-800 mb-1 group-hover:text-emerald-700 truncate">${p.name || 'Sem Nome'}</h3>
+                        <p class="text-sm text-slate-500 mb-4">${p.sector || 'Setor não definido'}</p>
+                        <div class="text-xs text-slate-400 border-t border-slate-100 pt-3 flex justify-between">
+                            <span>Editado: ${new Date(p.lastEdited).toLocaleDateString()}</span>
+                            <span class="text-emerald-600 font-medium">Ver <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            return `
+                <div class="max-w-6xl mx-auto px-4 py-8 w-full animate-fade-in">
+                    <div class="flex justify-between items-center mb-8">
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-900">Meus Projetos</h2>
+                            <p class="text-slate-500">Gerencie seus pitch decks e monitore seu impacto.</p>
+                        </div>
+                        <button onclick="window.navigateTo('wizard')" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2.5 rounded-lg font-medium shadow-md transition-all flex items-center">
+                            <i class="fa-solid fa-plus mr-2"></i> Novo Projeto
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${pitchesHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderWizard() {
+            if (state.isLoading) return renderSpinner();
+            const p = state.currentPitch;
+            return `
+                <div class="max-w-3xl mx-auto px-4 py-8 animate-fade-in w-full">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-slate-50 px-8 py-4 border-b border-slate-200 flex justify-between items-center">
+                            <h2 class="font-bold text-slate-800 flex items-center"><i class="fa-solid fa-wand-magic-sparkles text-emerald-500 mr-2"></i> Editor de Pitch</h2>
+                            <div class="flex space-x-2">
+                                <button onclick="window.loadTemplate()" class="text-xs bg-white border border-slate-300 px-3 py-1.5 rounded-md hover:bg-slate-50 text-slate-600">
+                                    <i class="fa-regular fa-lightbulb mr-1"></i> Usar Exemplo
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-8 space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nome do Projeto</label>
+                                    <input type="text" value="${p.name}" oninput="window.updatePitchData('name', this.value)" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ex: EcoTech">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Setor</label>
+                                    <select onchange="window.updatePitchData('sector', this.value)" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                                        <option value="">Selecione...</option>
+                                        ${MOCK_DATA.sectors.map(s => `<option value="${s}" ${p.sector === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">O Problema</label>
+                                <textarea oninput="window.updatePitchData('problem', this.value)" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none" placeholder="Descreva o problema...">${p.problem}</textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">A Solução</label>
+                                <textarea oninput="window.updatePitchData('solution', this.value)" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none" placeholder="Sua solução...">${p.solution}</textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Métricas de Impacto</label>
+                                <input type="text" value="${p.metrics}" oninput="window.updatePitchData('metrics', this.value)" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ex: 500 toneladas de CO2 evitadas">
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Investimento (R$)</label>
+                                    <input type="number" value="${p.ask}" oninput="window.updatePitchData('ask', Number(this.value))" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Retorno Projetado (R$)</label>
+                                    <input type="number" value="${p.return}" oninput="window.updatePitchData('return', Number(this.value))" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Modelo Financeiro</label>
+                                <input type="text" value="${p.model}" oninput="window.updatePitchData('model', this.value)" class="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ex: Venda B2B, SaaS...">
+                            </div>
+
+                             <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 mt-4">
+                                <label class="block text-sm font-bold text-blue-900 mb-2">Perfil do Investidor (Simulação)</label>
+                                <div class="flex space-x-4">
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="investorProfile" value="Anjo" 
+                                            ${p.investorProfile === 'Anjo' ? 'checked' : ''} 
+                                            onchange="window.updatePitchData('investorProfile', this.value)" 
+                                            class="form-radio text-blue-600">
+                                        <span class="ml-2 text-sm text-blue-800">Investidor Anjo (Foco Retorno)</span>
+                                    </label>
+                                    <label class="flex items-center cursor-pointer">
+                                        <input type="radio" name="investorProfile" value="Impacto" 
+                                            ${p.investorProfile === 'Impacto' ? 'checked' : ''} 
+                                            onchange="window.updatePitchData('investorProfile', this.value)" 
+                                            class="form-radio text-emerald-600">
+                                        <span class="ml-2 text-sm text-emerald-800">Fundo de Impacto (Foco ESG)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-50 px-8 py-5 border-t border-slate-200 flex justify-end space-x-3">
+                            <button onclick="window.navigateTo('my-pitches')" class="px-4 py-2 text-slate-600 hover:text-slate-800 font-medium">Cancelar</button>
+                            <button onclick="window.saveProject()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium shadow-md transition-all flex items-center">
+                                <i class="fa-solid fa-save mr-2"></i> Salvar & Gerar Deck
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDeck() {
+            const p = state.currentPitch;
+            const isImpactInvestor = p.investorProfile === 'Impacto';
+            const accentColor = isImpactInvestor ? 'text-emerald-600' : 'text-blue-700';
+            const accentBg = isImpactInvestor ? 'bg-emerald-50' : 'bg-blue-50';
+            const investorBadge = isImpactInvestor 
+                ? '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded-full border border-emerald-200">Foco: Impacto ESG</span>' 
+                : '<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full border border-blue-200">Foco: Retorno Financeiro</span>';
+
+            // Nota: contenteditable="true" + onblur="window.handleInPlaceEdit(this, 'field')"
+            
+            return `
+                <div class="max-w-5xl mx-auto px-4 py-8 w-full animate-fade-in">
+                    <div class="flex justify-between items-center mb-8 no-print">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <h2 class="text-3xl font-bold text-slate-900">Pitch Deck</h2>
+                                ${investorBadge}
+                            </div>
+                            <p class="text-slate-500 text-sm">Clique nos textos abaixo para editar (salvamento automático).</p>
+                        </div>
+                        <div class="flex space-x-3">
+                             <button id="btn-deck-ai" onclick="window.handleAiDeckHelp()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium shadow-md transition-all flex items-center">
+                                <i class="fa-solid fa-robot mr-2"></i> Sugestões IA
+                            </button>
+                            <button onclick="window.navigateTo('wizard', '${p.id}')" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-50 transition-all">
+                                <i class="fa-solid fa-pen mr-2"></i> Voltar ao Form
+                            </button>
+                            <button onclick="window.print()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium shadow-md transition-all">
+                                <i class="fa-solid fa-print mr-2"></i> Imprimir PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 print:block print:space-y-8">
+                        
+                        <!-- Slide 1: Capa -->
+                        <div class="print-break-inside-avoid bg-white rounded-xl shadow-sm border border-slate-200 p-10 flex flex-col justify-center min-h-[300px] relative overflow-hidden print-shadow-none">
+                            <div class="absolute top-0 left-0 w-2 h-full ${isImpactInvestor ? 'bg-emerald-500' : 'bg-blue-600'}"></div>
+                            <div class="z-10 relative">
+                                <h3 class="text-sm font-bold tracking-widest text-slate-400 uppercase mb-4">Apresentação</h3>
+                                <h1 class="text-5xl font-extrabold text-slate-900 mb-4 leading-tight" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'name')">${p.name || 'Nome do Projeto'}</h1>
+                                <p class="text-xl ${accentColor} font-medium" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'sector')">${p.sector || 'Setor'}</p>
+                            </div>
+                            <div class="absolute -bottom-10 -right-10 text-slate-50 opacity-50 transform rotate-12">
+                                <i class="fa-solid fa-rocket text-9xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Slide 2: Problema e Solução -->
+                        <div class="print-break-inside-avoid bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex flex-col justify-center min-h-[300px] print-shadow-none">
+                            <div class="mb-6">
+                                <div class="flex items-center text-orange-500 font-bold mb-2">
+                                    <i class="fa-solid fa-fire mr-2"></i> O Problema
+                                </div>
+                                <p class="text-lg text-slate-700 leading-relaxed" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'problem')">"${p.problem || '...'}"</p>
+                            </div>
+                            <div class="w-full h-px bg-slate-100 mb-6"></div>
+                            <div>
+                                <div class="flex items-center text-emerald-600 font-bold mb-2">
+                                    <i class="fa-solid fa-lightbulb mr-2"></i> A Solução
+                                </div>
+                                <p class="text-lg text-slate-700 leading-relaxed font-medium" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'solution')">"${p.solution || '...'}"</p>
+                            </div>
+                        </div>
+
+                        <!-- Slide 3: Números -->
+                        <div class="print-break-inside-avoid bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex flex-col justify-center min-h-[300px] ${isImpactInvestor ? 'ring-2 ring-emerald-100' : ''} print-shadow-none">
+                            <h3 class="text-sm font-bold tracking-widest text-slate-400 uppercase mb-6 text-center">Impacto Gerado</h3>
+                            <div class="text-center">
+                                <div class="inline-block p-4 ${accentBg} rounded-full mb-4">
+                                    <i class="fa-solid fa-chart-line text-3xl ${accentColor}"></i>
+                                </div>
+                                <h2 class="text-3xl font-bold text-slate-900 mb-2" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'metrics')">${p.metrics || 'Definir Métricas'}</h2>
+                                <p class="text-slate-500 text-sm">KPIs principais de transformação social/ambiental.</p>
+                            </div>
+                        </div>
+
+                        <!-- Slide 4: Financeiro -->
+                        <div class="print-break-inside-avoid bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex flex-col justify-center min-h-[300px] ${!isImpactInvestor ? 'ring-2 ring-blue-100' : ''} print-shadow-none">
+                            <h3 class="text-sm font-bold tracking-widest text-slate-400 uppercase mb-6 text-center">Proposta de Investimento</h3>
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-slate-50 p-4 rounded-lg text-center">
+                                    <p class="text-xs text-slate-400 uppercase font-bold">Busca (R$)</p>
+                                    <p class="text-2xl font-bold text-slate-800" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'ask')">${p.ask.toLocaleString()}</p>
+                                </div>
+                                <div class="bg-emerald-50 p-4 rounded-lg text-center border border-emerald-100">
+                                    <p class="text-xs text-emerald-600 uppercase font-bold">Retorno (R$)</p>
+                                    <p class="text-2xl font-bold text-emerald-700" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'return')">${p.return.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-sm font-bold text-slate-600">Modelo:</span>
+                                <span class="text-sm text-slate-500 ml-1" contenteditable="true" onblur="window.handleInPlaceEdit(this, 'model')">${p.model || '...'}</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderObjections() {
+            const p = state.currentPitch;
+            const sectorData = MOCK_DATA.objections[p.sector] || MOCK_DATA.objections["Geral"];
+            
+            return `
+                <div class="max-w-3xl mx-auto px-4 py-8 animate-fade-in w-full">
+                    <div class="text-center mb-10">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-2">Matriz de Objeções</h2>
+                        <p class="text-slate-500">Perguntas prováveis para: <span class="font-semibold text-emerald-600">${p.sector || 'Geral'}</span></p>
+                    </div>
+
+                    <!-- AI SUGGESTION BLOCK -->
+                    <div class="bg-indigo-50 rounded-xl border border-indigo-100 p-6 mb-8 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-indigo-900 flex items-center">
+                                <i class="fa-solid fa-robot mr-2"></i> Consultor IA (Gemini)
+                            </h3>
+                            <button id="ai-btn" onclick="window.generateAiSuggestions()" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-md transition-colors">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Gerar Novos Argumentos
+                            </button>
+                        </div>
+                        <div id="ai-output" class="text-indigo-800 text-sm leading-relaxed bg-white p-4 rounded-lg border border-indigo-100">
+                            ${state.aiResponse ? state.aiResponse : 'Clique no botão acima para gerar argumentos de negociação personalizados para este pitch usando Inteligência Artificial.'}
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${sectorData.map((obj, i) => `
+                            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                                <details class="group">
+                                    <summary class="flex justify-between items-center cursor-pointer p-6 list-none">
+                                        <div class="flex items-center">
+                                            <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-4 group-open:bg-blue-600 group-open:text-white transition-colors">
+                                                <i class="fa-regular fa-comment-dots"></i>
+                                            </div>
+                                            <span class="font-semibold text-slate-700 group-open:text-blue-900 text-lg">${obj.q}</span>
+                                        </div>
+                                        <span class="transition group-open:rotate-180">
+                                            <i class="fa-solid fa-chevron-down text-slate-400"></i>
+                                        </span>
+                                    </summary>
+                                    <div class="px-6 pb-6 pl-[4.5rem] text-slate-600 leading-relaxed border-t border-slate-50 pt-4">
+                                        ${obj.a}
+                                    </div>
+                                </details>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboard() {
+            const p = state.currentPitch;
+            const roi = p.ask > 0 ? ((p.return - p.ask) / p.ask * 100).toFixed(0) : 0;
+            const isProjectEmpty = !p.name;
+
+            setTimeout(() => initDashboardChart(p), 100);
+
+            return `
+                <div class="max-w-5xl mx-auto px-4 py-8 w-full animate-fade-in">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-8">Dashboard Financeiro</h2>
+                    
+                    ${isProjectEmpty ? 
+                        `<div class="bg-yellow-50 p-4 rounded-lg text-yellow-800 mb-6 border border-yellow-200">
+                            <i class="fa-solid fa-triangle-exclamation mr-2"></i> Selecione ou crie um projeto para ver dados reais.
+                        </div>` : ''
+                    }
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-slate-500 font-medium">Investimento</p>
+                                <h3 class="text-2xl font-bold text-slate-900">R$ ${p.ask.toLocaleString()}</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                                <i class="fa-solid fa-wallet"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-slate-500 font-medium">ROI Estimado</p>
+                                <h3 class="text-2xl font-bold text-emerald-600">${roi}%</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-slate-500 font-medium">Status</p>
+                                <h3 class="text-2xl font-bold text-blue-900">Online (Supabase)</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <i class="fa-solid fa-cloud"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm h-96 relative">
+                         <h3 class="text-lg font-bold text-slate-800 mb-4">Comparativo: Investimento vs. Retorno</h3>
+                         <div class="w-full h-full pb-10">
+                            <canvas id="impactChart"></canvas>
+                         </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 7. LÓGICA DE GRÁFICOS (CHART.JS) ---
+
+        window.impactChartInstance = null;
+
+        function initDashboardChart(data) {
+            if (typeof Chart === 'undefined') return;
+            const ctx = document.getElementById('impactChart');
+            if (!ctx) return;
+            if (window.impactChartInstance) window.impactChartInstance.destroy();
+
+            try {
+                window.impactChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Investimento', 'Retorno Projetado'],
+                        datasets: [{
+                            label: 'Valores (R$)',
+                            data: [data.ask || 0, data.return || 0],
+                            backgroundColor: ['#f97316', '#10b981'],
+                            borderRadius: 6,
+                            barThickness: 60
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Inter' } } },
+                            x: { grid: { display: false }, ticks: { font: { family: 'Inter' } } }
+                        }
+                    }
+                });
+            } catch (e) { console.error("Chart error:", e); }
+        }
+
+        // --- 8. RENDERIZAÇÃO PRINCIPAL ---
+
+        function render() {
+            const app = document.getElementById('app-content');
+            
+            // Se estiver carregando (ex: esperando Auth ou DB)
+            if (state.isLoading) {
+                app.innerHTML = renderSpinner();
+                return;
+            }
+
+            // Gatekeeper: Auth
+            if (!state.user) {
+                app.innerHTML = renderLogin();
+                return;
+            }
+
+            // Router
+            let contentHtml = '';
+            switch(state.currentView) {
+                case 'my-pitches': contentHtml = renderMyPitches(); break;
+                case 'wizard': contentHtml = renderWizard(); break;
+                case 'deck': contentHtml = renderDeck(); break;
+                case 'objections': contentHtml = renderObjections(); break;
+                case 'dashboard': contentHtml = renderDashboard(); break;
+                default: contentHtml = renderMyPitches();
+            }
+            
+            const currentYear = new Date().getFullYear();
+
+            // App Shell
+            app.innerHTML = `
+                <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 no-print">
+                    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex justify-between h-16">
+                            <div class="flex items-center cursor-pointer" onclick="window.navigateTo('my-pitches')">
+                                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold mr-2">I</div>
+                                <span class="font-bold text-xl text-slate-800">ImpactPitch <span class="text-emerald-500">AI</span></span>
+                            </div>
+                            <div class="hidden md:flex space-x-1 items-center">
+                                <button onclick="window.navigateTo('my-pitches')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${state.currentView === 'my-pitches' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}">Projetos</button>
+                                <button onclick="window.navigateTo('dashboard')" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ${state.currentView === 'dashboard' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}">Dashboard</button>
+                                <div class="h-6 w-px bg-slate-200 mx-2"></div>
+                                <div class="flex items-center text-xs text-slate-400 mr-2"><i class="fa-solid fa-user mr-1"></i> ${state.user.email}</div>
+                                <button onclick="window.logout()" class="text-red-500 hover:text-red-700 text-sm font-medium"><i class="fa-solid fa-sign-out-alt"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                <main class="flex-1 bg-slate-50">
+                    ${contentHtml}
+                </main>
+
+                <footer class="bg-white border-t border-slate-200 py-6 mt-auto no-print">
+                    <div class="max-w-6xl mx-auto px-4 text-center">
+                        <p class="text-slate-400 text-sm">ImpactPitch AI &copy; ${currentYear} | Powered by Supabase & Gemini</p>
+                    </div>
+                </footer>
+            `;
+        }
+
+        // --- 9. INICIALIZAÇÃO ---
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            state.isLoading = true;
+            try {
+                // Checar sessão Supabase
+                const session = await Services.auth.getSession();
+                if (session) {
+                    state.user = session.user;
+                    state.currentView = 'my-pitches';
+                    // Fetch inicial
+                    state.pitchesList = await Services.db.listPitches();
+                }
+            } catch (error) {
+                console.error("Init Error:", error);
+            } finally {
+                state.isLoading = false;
+                render();
+            }
+        });
+
+    </script>
+</body>
+</html>
